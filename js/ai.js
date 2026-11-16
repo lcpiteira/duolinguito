@@ -65,22 +65,65 @@ function normalise(q) {
   return null;
 }
 
+const RULES = `QUALITY RULES (very important):
+- Every sentence must sound natural, like real British English that a native speaker would say. No odd or nonsensical sentences.
+- Exactly ONE option must be correct. Check each distractor: it must be clearly wrong in this context, never also acceptable. Never use "all of the above" or "none".
+- Include a clear clue in the sentence (time expression, context, or a second sentence) so that only one answer fits. If two answers could fit, rewrite the question.
+- For gap-fill, give the verb in brackets when it is a grammar question, and list ALL acceptable answers in "answers", including contractions (e.g. "'ll go" and "will go").
+- Each "explain" must state the rule that makes the answer correct, in one short sentence.
+- Double-check every answer before returning.`;
+
+const norm = (s) => String(s).toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, ' ').trim().replace(/[.!]$/, '');
+
+// Segunda passagem: a IA resolve as perguntas sem ver a resposta; descarta as que discordam ou são ambíguas.
+async function verify(questions, passage) {
+  const items = questions.map((q, id) => ({ id, type: q.type, q: q.q, ...(q.type === 'mc' ? { options: q.options } : {}) }));
+  try {
+    const data = await call(
+      `You are a strict examiner. ${passage ? `Read this text:\n"""${passage}"""\n` : ''}Solve each question yourself, independently.
+For each one return: "answer" (for multiple choice the exact text of the best option; for gap-fill the word(s) that fit),
+and "problem": true if the question is ambiguous, has more than one correct answer, has no correct answer, or the sentence sounds unnatural or wrong.
+Return {"results":[{"id":0,"answer":"...","problem":false}]}
+Questions: ${JSON.stringify(items)}`,
+      0,
+    );
+    const byId = new Map((data.results || []).map((r) => [r.id, r]));
+    return questions.filter((q, id) => {
+      const r = byId.get(id);
+      if (!r) return true; // sem veredicto: mantém
+      if (r.problem) return false;
+      return q.type === 'mc' ? norm(r.answer) === norm(q.answer) : q.answers.some((a) => norm(a) === norm(r.answer));
+    });
+  } catch {
+    return questions; // se a verificação falhar, usa as perguntas como vieram
+  }
+}
+
 export async function generateQuestions(topic, n, level) {
-  const data = await call(`Create ${n} NEW exercises (CEFR ${level}) on this topic:
+  const data = await call(
+    `Create ${n + 3} NEW exercises (CEFR ${level}) on this topic:
 ${topic.aiHint}
-Mix about 70% multiple choice (4 options, exactly one correct) and 30% gap-fill. Vary the situations; avoid repeating the same sentence pattern.
-Return {"questions":[ ${QUESTION_SHAPE} ]}`);
-  const qs = (data.questions || []).map(normalise).filter(Boolean);
-  if (!qs.length) throw new Error('A IA não gerou perguntas válidas.');
-  return qs;
+Mix about 70% multiple choice (4 options) and 30% gap-fill. Vary the situations and sentence patterns.
+${RULES}
+Return {"questions":[ ${QUESTION_SHAPE} ]}`,
+    0.5,
+  );
+  const qs = await verify((data.questions || []).map(normalise).filter(Boolean));
+  if (qs.length < 3) throw new Error('A IA não gerou perguntas fiáveis desta vez. Tenta outra vez.');
+  return qs.slice(0, n);
 }
 
 export async function generateReading(level, theme) {
-  const data = await call(`Write an original reading text of 150-190 words (CEFR ${level}, British setting) about: ${theme || 'everyday life'}.
-Then write 6 comprehension questions: 4 multiple choice and 2 True/False (as multiple choice with options ["True","False"]).
-Return {"title":"...","text":"paragraphs separated by \\n\\n","questions":[ ${QUESTION_SHAPE} ]}`);
-  const questions = (data.questions || []).map(normalise).filter(Boolean);
-  if (!data.text || questions.length < 3) throw new Error('A IA não gerou um texto válido.');
+  const data = await call(
+    `Write an original reading text of 150-190 words (CEFR ${level}, British setting) about: ${theme || 'everyday life'}. It must read naturally, like a real short article or story.
+Then write 6 comprehension questions: 4 multiple choice and 2 True/False (multiple choice with options ["True","False"]). Every answer must be clearly supported by the text.
+${RULES}
+Return {"title":"...","text":"paragraphs separated by \\n\\n","questions":[ ${QUESTION_SHAPE} ]}`,
+    0.5,
+  );
+  if (!data.text) throw new Error('A IA não gerou um texto válido.');
+  const questions = await verify((data.questions || []).map(normalise).filter(Boolean), data.text);
+  if (questions.length < 3) throw new Error('A IA não gerou um texto fiável desta vez. Tenta outra vez.');
   return { title: data.title || 'Reading', text: data.text, questions };
 }
 
