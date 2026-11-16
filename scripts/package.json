@@ -1,0 +1,9 @@
+{
+  "name": "englishprep-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Ferramentas de desenvolvimento (não fazem parte do site)",
+  "dependencies": {
+    "playwright-core": "1.49.1"
+  }
+}

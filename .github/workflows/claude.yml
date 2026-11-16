@@ -22,7 +22,7 @@ jobs:
         (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     permissions:
       contents: write
       pull-requests: write
@@ -32,8 +32,45 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      # Ferramentas de pré-visualização (Chrome já vem instalado no runner)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+      - run: npm ci --prefix scripts
+
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --max-turns 25
+            --max-turns 40
+            --allowedTools "Bash(node scripts/preview.mjs:*),Bash(git checkout -- .),Bash(git clean -fd),Bash(git status:*),Bash(git diff:*),Bash(ls:*)"
+
+      # As imagens são guardadas na branch "previews" por este passo (o Claude só pode fazer push à sua branch)
+      - name: Publicar pré-visualizações
+        if: always() && hashFiles('.preview/*.png') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          RUN="run-${GITHUB_RUN_ID}"
+          DEST="${RUNNER_TEMP}/previews"
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$URL" previews >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch previews "$URL" "$DEST"
+          else
+            git init -q -b previews "$DEST"
+            git -C "$DEST" remote add origin "$URL"
+          fi
+          mkdir -p "${DEST}/issue-${NUM}/${RUN}"
+          cp .preview/*.png "${DEST}/issue-${NUM}/${RUN}/"
+          git -C "$DEST" add -A
+          git -C "$DEST" -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Pré-visualizações do #${NUM} (${RUN})"
+          git -C "$DEST" push -q origin previews
+          BASE="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/previews/issue-${NUM}/${RUN}" \
+            python3 scripts/preview-comment.py .preview/captions.json > "${RUNNER_TEMP}/preview.md"
+          gh issue comment "$NUM" --repo "$GITHUB_REPOSITORY" --body-file "${RUNNER_TEMP}/preview.md"

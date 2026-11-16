@@ -18,3 +18,13 @@ Site para preparar o teste de inglês britânico. Interface e textos em **portug
 3. Mudanças pequenas e focadas. Verifica a sintaxe dos módulos alterados.
 4. Se mexeres em `worker/` ou `mcp/`, avisa na descrição que é preciso `npx wrangler deploy` à mão na respetiva pasta (a Action não faz deploy dos Workers).
 5. Se mexeres na estrutura dos dados do Firebase ou nas regras, explica o impacto nos dados existentes.
+
+## Pré-visualização visual (obrigatória quando a interface muda)
+Sempre que um plano ou uma implementação alterar algo visível no site, gera imagens do resultado. Um passo do workflow publica-as depois num comentário (tu **não** publicas imagens nem fazes commit de `.preview/`).
+
+- **No plano (antes de haver código):** faz um **protótipo temporário** no diretório de trabalho, escreve `.preview/spec.json` com `"prototype": true`, corre `node scripts/preview.mjs .preview/spec.json` e **reverte tudo** com `git checkout -- .` e `git clean -fd`. Nunca faças commit do protótipo nem o deixes no repositório. A pasta `.preview/` é ignorada pelo git e sobrevive à reversão. No comentário do plano escreve que a pré-visualização aparece num comentário seguinte.
+- **Na implementação:** depois de alterar o código, corre o script com `"prototype": false` sobre o código final. Não faças commit de `.preview/`.
+- **O que fotografar:** os ecrãs alterados, em **telemóvel primeiro** e desktop, tema claro e escuro quando as cores contam. Máximo de cerca de 8 imagens. Para estados específicos usa `steps` (clicar, preencher, selecionar texto, toque longo) e `seed` (por exemplo, lista de notas vazia). Se o ecrã depender da IA, usa `mockAI`.
+- Formato do `spec.json` e passos disponíveis: ver o comentário no topo de `scripts/preview.mjs`. `node scripts/preview.mjs --default` fotografa os ecrãs principais.
+- Se a alteração não tem efeito visual (Workers, regras, dados, refactor), não geres imagens e diz isso no plano.
+- O script corre o site em modo local com dados de demonstração e sem rede. Não precisa de Firebase nem de chaves.
