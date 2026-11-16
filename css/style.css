@@ -75,6 +75,22 @@ code { background: var(--accent-soft); padding: 1px 6px; border-radius: 3px; }
 .btn.primary { background: var(--ink); color: var(--on-ink); }
 .btn.primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.wide { width: 100%; } .btn.google { display: flex; gap: .6rem; background: var(--card); }
+/* Botão "Guardar nota": dachshund num só traço (castanho), texto sobre o corpo */
+.btn-dachshund { --dx: #7a4a24; position: relative; display: inline-grid; place-items: center; width: 12.5rem; max-width: 100%; padding: 0; border: 0; background: none; color: var(--text); font: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; border-radius: var(--r); -webkit-tap-highlight-color: transparent; }
+:root[data-theme="dark"] .btn-dachshund { --dx: #c99263; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .btn-dachshund { --dx: #c99263; } }
+.btn-dachshund.sm { width: 8.5rem; font-size: .78rem; }
+.btn-dachshund > * { grid-area: 1 / 1; pointer-events: none; }
+.dx-svg { width: 100%; height: auto; overflow: visible; fill: none; stroke: var(--dx); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; transition: stroke .15s; }
+.dx-label { justify-self: start; margin-left: 44%; translate: -50% 0; line-height: 1; }
+.btn-dachshund:hover .dx-svg, .btn-dachshund:focus-visible .dx-svg { stroke: var(--accent); }
+.btn-dachshund:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-dachshund:disabled { opacity: .5; cursor: wait; }
+.dx-tail { transform-origin: 36px 28px; }
+@media (prefers-reduced-motion: no-preference) {
+  .btn-dachshund:hover:not(:disabled) .dx-tail, .btn-dachshund:focus-visible .dx-tail { animation: dx-wag .45s ease-in-out infinite alternate; }
+}
+@keyframes dx-wag { from { transform: rotate(-14deg); } to { transform: rotate(12deg); } }
 .link-btn { background: none; border: 0; color: var(--text); font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer; min-height: 44px; }
 input, textarea, select { font: inherit; padding: .8rem .9rem; border-radius: var(--r); border: 1px solid var(--ink); background: var(--card); color: var(--text); width: 100%; min-height: 48px; }
 label { display: flex; flex-direction: column; gap: .35rem; font-weight: 600; font-size: .9rem; }
