@@ -1,0 +1,94 @@
+name: Pages
+
+# Produção: branch main → raiz da branch gh-pages (de onde o GitHub Pages serve).
+# Ambientes temporários: cada branch claude/issue-N-* → gh-pages/pr-preview/issue-N/,
+# removidos quando o issue ou o pull request é fechado.
+on:
+  push:
+    branches: [main, 'claude/**']
+  issues:
+    types: [closed]
+  pull_request:
+    types: [closed]
+
+# Um deploy de cada vez (todos escrevem na mesma branch)
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  REMOTE_URL: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+
+jobs:
+  site:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/pages.sh site
+
+  preview:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/claude/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publicar ambiente temporário
+        env:
+          REF: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$REF" =~ ^claude/(issue|pr)-([0-9]+)- ]]; then
+            echo "Branch sem número de issue/PR: sem ambiente."
+            exit 0
+          fi
+          ID="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+          NUM="${BASH_REMATCH[2]}"
+          scripts/pages.sh preview "$ID"
+
+          SHORT="$(git rev-parse --short HEAD)"
+          SITE="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/pr-preview/${ID}/"
+          printf '%s\n' '<!-- env-preview -->' '### Ambiente temporário' '' "**${SITE}**" '' \
+            "Commit \`${SHORT}\`. Pode demorar cerca de 1 minuto a refletir a última alteração." \
+            'Usa o mesmo login e os mesmos dados reais da produção. Desaparece quando o issue ou o pull request for fechado.' > "${RUNNER_TEMP}/env.md"
+
+          CID="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${NUM}/comments" --jq '.[] | select(.body | contains("<!-- env-preview -->")) | .id' | head -1)"
+          if [ -n "$CID" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${CID}" -F "body=@${RUNNER_TEMP}/env.md" >/dev/null
+          else
+            gh issue comment "$NUM" --repo "$GITHUB_REPOSITORY" --body-file "${RUNNER_TEMP}/env.md"
+          fi
+
+  cleanup:
+    if: github.event_name == 'issues' || (github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'claude/'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remover ambiente temporário
+        env:
+          EVENT: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = issues ]; then
+            ID="issue-${ISSUE_NUMBER}"; NUM="$ISSUE_NUMBER"
+          elif [[ "$HEAD_REF" =~ ^claude/(issue|pr)-([0-9]+)- ]]; then
+            ID="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"; NUM="${BASH_REMATCH[2]}"
+          else
+            echo "Sem número de issue/PR: nada a remover."
+            exit 0
+          fi
+          scripts/pages.sh cleanup "$ID"
+
+          CID="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${NUM}/comments" --jq '.[] | select(.body | contains("<!-- env-preview -->")) | .id' | head -1)"
+          if [ -n "$CID" ]; then
+            printf '%s\n' '<!-- env-preview -->' '### Ambiente temporário' '' 'Removido: o issue ou o pull request foi fechado.' > "${RUNNER_TEMP}/gone.md"
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${CID}" -F "body=@${RUNNER_TEMP}/gone.md" >/dev/null
+          fi

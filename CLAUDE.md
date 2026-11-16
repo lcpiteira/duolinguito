@@ -28,3 +28,9 @@ Sempre que um plano ou uma implementação alterar algo visível no site, gera i
 - Formato do `spec.json` e passos disponíveis: ver o comentário no topo de `scripts/preview.mjs`. `node scripts/preview.mjs --default` fotografa os ecrãs principais.
 - Se a alteração não tem efeito visual (Workers, regras, dados, refactor), não geres imagens e diz isso no plano.
 - O script corre o site em modo local com dados de demonstração e sem rede. Não precisa de Firebase nem de chaves.
+
+## Deploy e ambientes temporários
+- O GitHub Pages serve a branch **`gh-pages`**, que é gerada pelo workflow `pages.yml` (via `scripts/pages.sh`). **Nunca editar `gh-pages` à mão.** O deploy de produção acontece a cada push para `main`.
+- Cada branch `claude/issue-N-*` ganha um **ambiente temporário** em `.../pr-preview/issue-N/` (usa o mesmo login e os mesmos dados reais) e um comentário com o link no issue. É removido quando o issue ou o pull request fecha.
+- O site publicado é só o que está commitado, sem as pastas `worker/`, `mcp/`, `scripts/`, `.github/` nem os ficheiros de documentação/configuração (ver `EXCLUDES` em `scripts/pages.sh`). Não uses caminhos absolutos (`/js/...`): o site corre numa subpasta, por isso usa sempre caminhos relativos.
+- Como os ambientes usam a base de dados real, mudanças na estrutura dos dados têm de ser compatíveis com os dados existentes (ou avisa no plano).
