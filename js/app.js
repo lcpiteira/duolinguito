@@ -38,7 +38,19 @@ const setView = (html) => {
   view().innerHTML = html;
   window.scrollTo(0, 0);
 };
-const loading = (msg) => setView(`<div class="center-card"><div class="spinner"></div><p>${esc(msg)}</p></div>`);
+// Skeleton screens: o esqueleto da página com um brilho, em vez de um spinner.
+const sk = (w = '100%', h = '1rem', extra = '') => `<i class="sk" style="width:${w};height:${h};${extra}"></i>`;
+const skRows = (n) => Array.from({ length: n }, () => `<div class="trow static">${sk('2.2rem', '2.2rem', 'border-radius:50%;flex:none')}<span class="tmain">${sk('60%')}${sk('100%', '.5rem')}</span></div>`).join('');
+const skHome = () => `<section class="page" aria-busy="true">${sk('45%', '2rem', 'margin:.4rem 0 1rem')}
+  <div class="grid2"><div class="card">${sk('100%', '110px')}</div><div class="card">${sk('100%', '110px')}</div></div>
+  <div class="stats">${[0, 1, 2].map(() => `<div class="card">${sk('100%', '3rem')}</div>`).join('')}</div>
+  <div class="card list">${skRows(6)}</div></section>`;
+const skQuiz = (msg) => `<section class="page narrow" aria-busy="true">
+  <div class="progress"><i style="width:30%"></i></div>
+  <div class="card">${sk('85%', '1.4rem', 'margin-bottom:1.2rem')}${[0, 1, 2, 3].map(() => sk('100%', '3rem', 'margin-bottom:.6rem;border-radius:14px')).join('')}</div>
+  <p class="muted center-text">${esc(msg)}</p></section>`;
+const skFeedback = () => `<div class="card" aria-busy="true">${sk('40%', '1.6rem', 'margin-bottom:1rem')}${sk('100%')}${sk('90%', '1rem', 'margin-top:.5rem')}${sk('70%', '1rem', 'margin:.5rem 0 1.2rem')}${sk('100%', '4rem')}</div>`;
+const loading = (msg) => setView(skQuiz(msg));
 
 function aiError(e) {
   if (e instanceof ai.NoKeyError) {
@@ -56,8 +68,9 @@ backend.onAuth(async (user) => {
     return renderAuth();
   }
   me = user;
-  await store.load(user.uid);
   renderShell();
+  setView(skHome());
+  await store.load(user.uid);
   route();
 });
 window.addEventListener('hashchange', () => me && route());
@@ -419,7 +432,7 @@ function viewWriting() {
     if (words < 20) return toast('Escreve um pouco mais antes de corrigir.', 'err');
     if ((words < p.min || words > p.max) && !confirm(`O texto tem ${words} palavras (pedido: ${p.min}–${p.max}). Corrigir mesmo assim?`)) return;
     e.target.disabled = true;
-    view().querySelector('#result').innerHTML = `<div class="center-card"><div class="spinner"></div><p>A corrigir a tua composição…</p></div>`;
+    view().querySelector('#result').innerHTML = skFeedback();
     try {
       const feedback = await ai.correctWriting(text, p.title, level());
       await store.saveWriting({ prompt: p.title, text, words, feedback });
