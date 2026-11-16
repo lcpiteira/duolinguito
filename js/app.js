@@ -42,6 +42,25 @@ const NAV_ICONS = {
   settings: icon('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
 };
 
+// ---------- tema claro/escuro ----------
+const isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+const themeBtn = (extra = '') => {
+  const dark = isDark();
+  return `<button class="theme-toggle ${extra}" aria-label="${dark ? 'Mudar para modo claro' : 'Mudar para modo escuro'}" title="${dark ? 'Modo claro' : 'Modo escuro'}">${
+    dark
+      ? icon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>')
+      : icon('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>')
+  }</button>`;
+};
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.theme-toggle')) return;
+  const next = isDark() ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('theme', next); } catch {}
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#12141f' : '#f4efe6');
+  document.querySelectorAll('.theme-toggle').forEach((b) => b.outerHTML = themeBtn(b.classList.contains('floating') ? 'floating' : ''));
+});
+
 const view = () => document.getElementById('view');
 const setView = (html) => {
   view().innerHTML = html;
@@ -88,6 +107,7 @@ window.addEventListener('hashchange', () => me && route());
 function renderAuth(signup = false) {
   const local = backend.mode === 'local';
   $app.innerHTML = `
+  ${themeBtn('floating')}
   <div class="auth-wrap">
     <div class="auth-card">
       <div class="logo big">English<b>Prep</b></div>
@@ -151,6 +171,7 @@ function renderShell() {
       <a href="#/mistakes" data-r="mistakes">${NAV_ICONS.mistakes}<span>Erros</span></a>
       <a href="#/settings" data-r="settings">${NAV_ICONS.settings}<span>Definições</span></a>
     </nav>
+    ${themeBtn()}
     <button class="avatar" id="logout" title="Sair (${esc(me.name)})">${me.photo ? `<img src="${esc(me.photo)}" alt="" referrerpolicy="no-referrer">` : initial}</button>
   </header>
   <main id="view"></main>`;
