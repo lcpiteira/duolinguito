@@ -1,20 +1,14 @@
-// Botão "Guardar nota" em forma de dachshund (SVG inline original, sem imagens externas).
-// O texto é HTML normal sobreposto ao corpo; o desenho é decorativo (aria-hidden).
-const DOG = `<svg viewBox="0 0 170 64" aria-hidden="true" focusable="false">
-  <path class="dg-tail" d="M16 18 Q4 14 3 3"/>
-  <g class="dg-fill">
-    <rect x="24" y="36" width="12" height="25" rx="5"/><rect x="46" y="36" width="12" height="25" rx="5"/>
-    <rect x="88" y="36" width="12" height="25" rx="5"/><rect x="106" y="36" width="12" height="25" rx="5"/>
-    <rect x="12" y="8" width="108" height="32" rx="16"/>
-    <ellipse cx="128" cy="21" rx="17" ry="14"/>
-    <rect x="134" y="19" width="32" height="15" rx="7.5"/>
-  </g>
-  <path class="dg-ear" d="M120 11 Q111 26 121 40 Q134 36 131 17 Z"/>
-  <circle class="dg-eye" cx="138" cy="15" r="2.2"/>
-  <circle class="dg-nose" cx="163" cy="24" r="4"/>
+// Botão "Guardar nota" em forma de dachshund, num só traço (ao estilo do desenho "Le Chien" de Picasso).
+// Desenho original em SVG inline; o texto é HTML normal sobreposto ao corpo.
+const DOG = `<svg class="dx-svg" viewBox="0 0 240 92" aria-hidden="true" focusable="false">
+  <path class="dx-tail" d="M36 28C24 26 14 20 8 10"/>
+  <path d="M36 28C80 34 130 32 178 20C182 12 188 8 192 8C200 18 222 34 235 44C238 47 236 52 230 52C215 52 200 50 186 48"/>
+  <path d="M178 56C150 63 100 63 56 58"/>
+  <path d="M56 58L54 83Q54 87 48 87Q42 87 42 83L44 31"/>
+  <path d="M168 62L166 84Q166 88 172 88Q177 88 177 84L179 54"/>
+  <ellipse cx="186" cy="36" rx="8" ry="19"/>
 </svg>`;
 
-export function dachshundButton({ id = '', label = 'Guardar', aria = 'Guardar nota', small = false } = {}) {
-  const idAttr = id ? ` id="${id}"` : '';
-  return `<button type="button" class="btn-dachshund${small ? ' small' : ''}"${idAttr} aria-label="${aria}">${DOG}<span class="dg-label">${label}</span></button>`;
+export function dachshundBtn({ id = '', label = 'Guardar', aria = 'Guardar nota', small = false, attrs = '' } = {}) {
+  return `<button type="button" class="btn-dachshund${small ? ' sm' : ''}"${id ? ` id="${id}"` : ''} aria-label="${aria}" ${attrs}>${DOG}<span class="dx-label">${label}</span></button>`;
 }
