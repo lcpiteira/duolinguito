@@ -66,6 +66,23 @@ PY
     ;;
 esac
 
+# Autocorreção: remove ambientes cujo issue/PR já não está aberto. Uma execução de limpeza pode ser
+# descartada pela fila de concorrência (vários eventos juntos), por isso cada deploy volta a verificar.
+if [[ -n "${GH_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" && -d "$GH/pr-preview" ]]; then
+  for dir in "$GH"/pr-preview/*/; do
+    [[ -d "$dir" ]] || continue
+    name="$(basename "$dir")"
+    [[ "$name" =~ ^(issue|pr)-([0-9]+)$ ]] || continue
+    number="${BASH_REMATCH[2]}"
+    [[ "$cmd" == preview && "$name" == "$id" ]] && continue
+    state="$(gh api "repos/$GITHUB_REPOSITORY/issues/$number" --jq .state 2>/dev/null || echo unknown)"
+    if [[ "$state" == closed ]]; then
+      rm -rf "$dir"
+      echo "removido ambiente órfão: $name"
+      msg="$msg; remove $name (fechado)"
+    fi
+  done
+fi
 touch "$GH/.nojekyll"   # depois do rsync, que apagaria este ficheiro
 git -C "$GH" add -A
 if git -C "$GH" diff --cached --quiet; then
