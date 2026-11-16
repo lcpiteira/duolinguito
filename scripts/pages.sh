@@ -36,8 +36,6 @@ else
   git init -q -b gh-pages "$GH"
   git -C "$GH" remote add origin "$REMOTE_URL"
 fi
-touch "$GH/.nojekyll"
-
 case "$cmd" in
   site)
     rsync -a --delete "${EXCLUDES[@]}" "$SRC/" "$GH/"   # pr-preview/ fica protegido pelo --exclude
@@ -68,6 +66,7 @@ PY
     ;;
 esac
 
+touch "$GH/.nojekyll"   # depois do rsync, que apagaria este ficheiro
 git -C "$GH" add -A
 if git -C "$GH" diff --cached --quiet; then
   echo "sem alterações para publicar"
