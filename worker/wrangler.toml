@@ -7,6 +7,9 @@ FIREBASE_PROJECT_ID = "englishprep-lcp"
 GEMINI_MODEL = "gemini-2.5-flash"
 FALLBACK_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 DAILY_LIMIT = "40"
+TRANSLATE_LIMIT = "200"
+TRANSLATE_MODEL = "gemini-2.5-flash-lite"
+TRANSLATE_FALLBACK = "@cf/meta/m2m100-1.2b"
 ALLOWED_ORIGINS = "https://lcpiteira.github.io,http://localhost:8000"
 
 # Reserva grátis (Workers AI) quando a quota do Gemini acaba

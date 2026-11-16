@@ -1,5 +1,5 @@
 // Integração Gemini: gerar exercícios, textos de leitura e corrigir composições.
-import { geminiKey } from './store.js';
+import { geminiKey, hash } from './store.js';
 import * as backend from './backend.js';
 import { AI_PROXY_URL } from './config.js';
 
@@ -151,4 +151,54 @@ List at most 8 corrections and 5 better phrases. If there are no mistakes, retur
     improvedVersion: data.improvedVersion || '',
     tips: data.tips || [],
   };
+}
+
+// ---------- tradução (EN → PT-PT) ----------
+const TR_CACHE = 'eng.tr';
+const TR_MAX = 400;
+const readCache = () => {
+  try {
+    return JSON.parse(localStorage.getItem(TR_CACHE) || '{}');
+  } catch {
+    return {};
+  }
+};
+
+export async function translate(text, context = '') {
+  text = text.trim();
+  // para uma palavra o contexto muda o sentido; para frases não é preciso
+  const isWord = !/\s/.test(text);
+  const key = hash(`${text.toLowerCase()}|${isWord ? context.slice(0, 80) : ''}`);
+  const cache = readCache();
+  if (cache[key]) return cache[key];
+
+  let out;
+  if (backend.mode === 'firebase') {
+    const res = await fetch(AI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await backend.getIdToken()}` },
+      body: JSON.stringify({ action: 'translate', text, context }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Erro da tradução (${res.status})`);
+    out = body;
+  } else {
+    out = await call(
+      `Translate English to European Portuguese (pt-PT) for a learner. Reply with JSON only: {"translation": string, "note": string}.
+For a single word or short expression give the meaning that fits the context, and a short Portuguese note with word class and other common meanings. For a sentence give a natural translation and an empty note.
+Text: "${text}"\nContext sentence: "${context}"`,
+      0.2,
+    );
+  }
+  const result = { translation: out.translation, note: out.note || '', fallback: !!out.fallback };
+  if (!result.translation) throw new Error('Sem tradução. Tenta outra vez.');
+  cache[key] = result;
+  const keys = Object.keys(cache);
+  if (keys.length > TR_MAX) keys.slice(0, keys.length - TR_MAX).forEach((k) => delete cache[k]);
+  try {
+    localStorage.setItem(TR_CACHE, JSON.stringify(cache));
+  } catch {
+    /* sem espaço: ignora */
+  }
+  return result;
 }

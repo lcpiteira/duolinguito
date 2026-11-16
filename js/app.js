@@ -1,6 +1,7 @@
 import * as backend from './backend.js';
 import * as store from './store.js';
 import * as ai from './ai.js';
+import { initTranslate } from './translate.js';
 import { TOPICS, topicById } from './data/topics.js';
 import { BANK, READINGS, WRITING_PROMPTS } from './data/questions.js';
 
@@ -90,6 +91,10 @@ function aiError(e) {
 
 // ---------- arranque ----------
 backend.init();
+initTranslate({
+  saveNote: (text, context) => store.saveNote({ text, topic: quiz?.topicId || '', context }),
+  toast,
+});
 backend.onAuth(async (user) => {
   if (!user) {
     me = null;
@@ -340,8 +345,8 @@ function viewQuiz() {
   setView(`<section class="page narrow">
     <div class="quiz-top"><button class="link-btn" id="quit">✕ Sair</button><span>${t ? esc(t.title) : 'Rever erros'}</span><span>${quiz.i + 1}/${total}</span></div>
     <div class="progress"><i style="width:${(quiz.i / total) * 100}%"></i></div>
-    ${quiz.passage ? `<details class="card passage" ${quiz.i === 0 ? 'open' : ''}><summary>📖 ${esc(quiz.passage.title)}</summary>${quiz.passage.text.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}
-    <div class="card question"><p class="qtext">${esc(q.q)}</p>${body}<div id="fb"></div></div>
+    ${quiz.passage ? `<details class="card passage" data-tr ${quiz.i === 0 ? 'open' : ''}><summary>📖 ${esc(quiz.passage.title)}</summary>${quiz.passage.text.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}
+    <div class="card question"><p class="qtext" data-tr>${esc(q.q)}</p>${body}<div id="fb"></div></div>
     <div class="note-box"><button class="link-btn" id="noteToggle">+ Apontar nota</button>
       <div id="notePanel" hidden><textarea id="noteText" rows="3" placeholder="Uma dúvida, uma regra, uma palavra nova…"></textarea>
         <div class="wc-row"><small class="muted">Fica ligada a esta pergunta.</small><button class="btn primary" id="noteSave">Guardar nota</button></div></div></div>
@@ -399,7 +404,7 @@ function answer(your, btn) {
   const correct = q.type === 'mc' ? q.answer : q.answers[0];
   const last = quiz.i === quiz.questions.length - 1;
   view().querySelector('#fb').innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}">
-    <b>${ok ? 'Correto.' : 'Não foi bem.'}</b>${ok ? '' : ` Resposta certa: <b>${esc(correct)}</b>`}
+    <b>${ok ? 'Correto.' : 'Não foi bem.'}</b>${ok ? '' : ` Resposta certa: <b data-tr>${esc(correct)}</b>`}
     ${q.explain ? `<p>${esc(q.explain)}</p>` : ''}</div>
     <button class="btn primary wide" id="next" autofocus>${last ? 'Ver resultado' : 'Seguinte →'}</button>`;
   const next = view().querySelector('#next');
@@ -435,8 +440,8 @@ function viewResult(session) {
   const t = topicById(quiz.topicId);
   setView(`<section class="page narrow">
     <div class="card result">${ring(p)}<h1>${session.score}/${session.total}</h1><p>${msg}</p></div>
-    ${wrong.length ? `<h2>Para rever</h2>${wrong.map((w) => `<div class="card miss"><p><b>${esc(w.q.q)}</b></p>
-      <p class="bad-t">A tua resposta: ${esc(w.your || '—')}</p><p class="ok-t">Certa: ${esc(w.q.type === 'mc' ? w.q.answer : w.q.answers[0])}</p>
+    ${wrong.length ? `<h2>Para rever</h2>${wrong.map((w) => `<div class="card miss"><p data-tr><b>${esc(w.q.q)}</b></p>
+      <p class="bad-t">A tua resposta: ${esc(w.your || '—')}</p><p class="ok-t" data-tr>Certa: ${esc(w.q.type === 'mc' ? w.q.answer : w.q.answers[0])}</p>
       ${w.q.explain ? `<p class="muted">${esc(w.q.explain)}</p>` : ''}</div>`).join('')}` : ''}
     <div class="actions"><a class="btn primary" href="#/topic/${t ? t.id : 'future'}" ${t ? '' : 'hidden'}>Praticar outra vez</a><a class="btn" href="#/">Início</a></div>
   </section>`);
@@ -517,9 +522,9 @@ function renderFeedback(f, words, p) {
   return `<div class="card feedback-card">
     <div class="fb-head">${ring(f.score / 10)}<div><h2>${f.score}/10</h2><p>${esc(f.summary)}</p><small class="muted">${words} palavras${words < p.min || words > p.max ? ' · fora do intervalo pedido' : ''}</small></div></div>
     ${f.strengths.length ? `<h3>Pontos fortes</h3><ul>${li(f.strengths)}</ul>` : ''}
-    ${f.corrections.length ? `<h3>Correções</h3>${f.corrections.map((c) => `<div class="corr"><p><s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : '<h3>Correções</h3><p>Sem erros relevantes.</p>'}
-    ${f.betterPhrases.length ? `<h3>Como dizer melhor</h3>${f.betterPhrases.map((c) => `<div class="corr"><p>${esc(c.original)} → <b>${esc(c.better)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : ''}
-    ${f.improvedVersion ? `<h3>Versão melhorada</h3><blockquote>${esc(f.improvedVersion)}</blockquote>` : ''}
+    ${f.corrections.length ? `<h3>Correções</h3>${f.corrections.map((c) => `<div class="corr"><p data-tr><s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : '<h3>Correções</h3><p>Sem erros relevantes.</p>'}
+    ${f.betterPhrases.length ? `<h3>Como dizer melhor</h3>${f.betterPhrases.map((c) => `<div class="corr"><p data-tr>${esc(c.original)} → <b>${esc(c.better)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : ''}
+    ${f.improvedVersion ? `<h3>Versão melhorada</h3><blockquote data-tr>${esc(f.improvedVersion)}</blockquote>` : ''}
     ${f.tips.length ? `<h3>Dicas</h3><ul>${li(f.tips)}</ul>` : ''}</div>`;
 }
 

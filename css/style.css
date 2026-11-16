@@ -187,3 +187,17 @@ blockquote { margin: 0; padding: .4rem 0 .4rem 1rem; border-left: 3px solid var(
 .note-actions { display: flex; gap: 1rem; margin-top: .4rem; font-size: .88rem; }
 .link-btn.danger:hover { color: var(--weak); }
 blockquote.ctx { font-size: .85rem; color: var(--muted); margin-bottom: .6rem; white-space: normal; }
+
+/* tradução */
+[data-tr], .opt { -webkit-touch-callout: none; }
+[data-tr]::selection, [data-tr] *::selection { background: var(--accent-soft); color: var(--text); }
+.tr-pop { position: absolute; z-index: 60; width: min(320px, calc(100vw - 24px)); background: var(--card); color: var(--text); border: 1px solid var(--ink); border-radius: var(--r); padding: .8rem .9rem; box-shadow: 4px 4px 0 var(--ink); }
+.tr-head { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
+.tr-text { font-family: var(--serif); font-size: 1.05rem; overflow-wrap: anywhere; }
+.tr-head span { display: flex; gap: .2rem; flex: none; }
+.tr-btn { font: inherit; font-size: .8rem; font-weight: 600; background: none; border: 0; color: var(--muted); padding: .35rem .5rem; min-height: 32px; cursor: pointer; border-radius: var(--r); }
+.tr-btn:hover { background: var(--accent-soft); color: var(--text); }
+.tr-btn.strong { color: var(--accent); } .tr-btn:disabled { opacity: .6; cursor: default; }
+.tr-main { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.tr-note { margin: .3rem 0 0; font-size: .85rem; color: var(--muted); }
+.tr-foot { margin-top: .5rem; display: flex; justify-content: flex-end; } .tr-foot:empty { display: none; }

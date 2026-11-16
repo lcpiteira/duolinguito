@@ -27,6 +27,58 @@ async function verifyFirebaseToken(token, projectId) {
   return payload.sub;
 }
 
+const today = () => new Date().toISOString().slice(0, 10);
+
+// Contagem diária por utilizador. Se o KV grátis esgotar as escritas, deixa passar em vez de falhar.
+async function overLimit(env, key, limit) {
+  const used = parseInt((await env.USAGE.get(key).catch(() => null)) || '0', 10);
+  if (used >= limit) return true;
+  await env.USAGE.put(key, String(used + 1), { expirationTtl: 172800 }).catch(() => {});
+  return false;
+}
+
+const TRANSLATE_SYSTEM = `You translate English to European Portuguese (pt-PT) for a language learner.
+Reply with JSON only: {"translation": string, "note": string}.
+- If the input is a single word or short expression: "translation" is the meaning that fits the given context sentence; "note" is the word class and other common meanings, max 15 words, in Portuguese (e.g. "adj. Outros sentidos: quebrado").
+- If the input is a phrase or sentence: "translation" is a natural pt-PT translation; "note" is an empty string unless an idiom needs explaining.`;
+
+async function translate(env, uid, body, reply) {
+  const text = String(body.text || '').trim().slice(0, 400);
+  const context = String(body.context || '').trim().slice(0, 400);
+  if (!text) return reply(400, { error: 'Sem texto para traduzir' });
+  const limit = parseInt(env.TRANSLATE_LIMIT || '200', 10);
+  if (await overLimit(env, `t:${uid}:${today()}`, limit)) {
+    return reply(429, { error: `Atingiste o limite de ${limit} traduções por hoje. Volta amanhã.` });
+  }
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.TRANSLATE_MODEL}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: TRANSLATE_SYSTEM }] },
+        contents: [{ role: 'user', parts: [{ text: `Text: "${text}"\nContext sentence: "${context}"` }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+      }),
+    });
+    if (res.ok) {
+      const raw = (await res.json()).candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '';
+      const out = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+      if (out.translation) return reply(200, { translation: String(out.translation), note: String(out.note || '') });
+    }
+  } catch {
+    /* cai para a reserva */
+  }
+
+  try {
+    const out = await env.AI.run(env.TRANSLATE_FALLBACK, { text, source_lang: 'english', target_lang: 'portuguese' });
+    if (out.translated_text) return reply(200, { translation: out.translated_text, note: '', fallback: true });
+  } catch {
+    /* sem reserva */
+  }
+  return reply(502, { error: 'Não foi possível traduzir agora. Tenta daqui a pouco.' });
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -56,15 +108,13 @@ export default {
     } catch {
       return reply(400, { error: 'Pedido inválido' });
     }
+    if (body.action === 'translate') return translate(env, uid, body, reply);
     const { system = '', prompt = '', temperature = 0.8 } = body;
     if (!prompt || prompt.length > MAX_PROMPT || system.length > MAX_PROMPT) return reply(400, { error: 'Texto demasiado grande' });
 
     // limite diário por utilizador (KV grátis)
-    const usageKey = `${uid}:${new Date().toISOString().slice(0, 10)}`;
-    const used = parseInt((await env.USAGE.get(usageKey)) || '0', 10);
     const limit = parseInt(env.DAILY_LIMIT, 10);
-    if (used >= limit) return reply(429, { error: `Atingiste o limite de ${limit} pedidos de IA por hoje. Volta amanhã.` });
-    await env.USAGE.put(usageKey, String(used + 1), { expirationTtl: 172800 });
+    if (await overLimit(env, `${uid}:${today()}`, limit)) return reply(429, { error: `Atingiste o limite de ${limit} pedidos de IA por hoje. Volta amanhã.` });
 
     const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
       method: 'POST',
