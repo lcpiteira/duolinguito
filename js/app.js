@@ -37,6 +37,7 @@ const icon = (d) => `<svg aria-hidden="true" viewBox="0 0 24 24">${d}</svg>`;
 const NAV_ICONS = {
   home: icon('<path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>'),
   practice: icon('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/>'),
+  notes: icon('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>'),
   writing: icon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
   mistakes: icon('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
   settings: icon('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
@@ -168,6 +169,7 @@ function renderShell() {
       <a href="#/" data-r="home">${NAV_ICONS.home}<span>Início</span></a>
       <a href="#/practice" data-r="practice">${NAV_ICONS.practice}<span>Praticar</span></a>
       <a href="#/writing" data-r="writing">${NAV_ICONS.writing}<span>Escrever</span></a>
+      <a href="#/notes" data-r="notes">${NAV_ICONS.notes}<span>Notas</span></a>
       <a href="#/mistakes" data-r="mistakes">${NAV_ICONS.mistakes}<span>Erros</span></a>
       <a href="#/settings" data-r="settings">${NAV_ICONS.settings}<span>Definições</span></a>
     </nav>
@@ -187,6 +189,7 @@ function route() {
   if (r === 'topic') return viewTopic(arg);
   if (r === 'quiz') return quiz ? viewQuiz() : (location.hash = '#/practice');
   if (r === 'writing') return viewWriting();
+  if (r === 'notes') return viewNotes();
   if (r === 'mistakes') return viewMistakes();
   if (r === 'settings') return viewSettings();
   return viewHome();
@@ -339,7 +342,31 @@ function viewQuiz() {
     <div class="progress"><i style="width:${(quiz.i / total) * 100}%"></i></div>
     ${quiz.passage ? `<details class="card passage" ${quiz.i === 0 ? 'open' : ''}><summary>📖 ${esc(quiz.passage.title)}</summary>${quiz.passage.text.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}
     <div class="card question"><p class="qtext">${esc(q.q)}</p>${body}<div id="fb"></div></div>
+    <div class="note-box"><button class="link-btn" id="noteToggle">+ Apontar nota</button>
+      <div id="notePanel" hidden><textarea id="noteText" rows="3" placeholder="Uma dúvida, uma regra, uma palavra nova…"></textarea>
+        <div class="wc-row"><small class="muted">Fica ligada a esta pergunta.</small><button class="btn primary" id="noteSave">Guardar nota</button></div></div></div>
   </section>`);
+  const panel = view().querySelector('#notePanel');
+  view().querySelector('#noteToggle').addEventListener('click', () => {
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) view().querySelector('#noteText').focus();
+  });
+  view().querySelector('#noteSave').addEventListener('click', async (e) => {
+    const ta = view().querySelector('#noteText');
+    const text = ta.value.trim();
+    if (!text) return toast('Escreve a nota primeiro.', 'err');
+    e.target.disabled = true;
+    try {
+      await store.saveNote({ text, topic: q.topic || quiz.topicId, context: q.q });
+      ta.value = '';
+      panel.hidden = true;
+      toast('Nota guardada.');
+    } catch (x) {
+      toast('Não foi possível guardar: ' + x.message, 'err');
+    } finally {
+      e.target.disabled = false;
+    }
+  });
   view().querySelector('#quit').addEventListener('click', () => {
     if (quiz.items.length && !confirm('Sair agora? Os resultados desta sessão não serão guardados.')) return;
     quiz = null;
@@ -376,7 +403,7 @@ function answer(your, btn) {
     ${q.explain ? `<p>${esc(q.explain)}</p>` : ''}</div>
     <button class="btn primary wide" id="next" autofocus>${last ? 'Ver resultado' : 'Seguinte →'}</button>`;
   const next = view().querySelector('#next');
-  next.focus();
+  if (document.activeElement?.id !== 'noteText') next.focus(); // não roubar o foco a quem está a escrever uma nota
   next.addEventListener('click', nextQuestion);
 }
 
@@ -494,6 +521,86 @@ function renderFeedback(f, words, p) {
     ${f.betterPhrases.length ? `<h3>Como dizer melhor</h3>${f.betterPhrases.map((c) => `<div class="corr"><p>${esc(c.original)} → <b>${esc(c.better)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : ''}
     ${f.improvedVersion ? `<h3>Versão melhorada</h3><blockquote>${esc(f.improvedVersion)}</blockquote>` : ''}
     ${f.tips.length ? `<h3>Dicas</h3><ul>${li(f.tips)}</ul>` : ''}</div>`;
+}
+
+// ---------- notas ----------
+function viewNotes() {
+  const topicOpts = (empty) => `<option value="${empty}">Geral</option>${TOPICS.map((t) => `<option value="${t.id}">${esc(t.title)}</option>`).join('')}`;
+  setView(`<section class="page narrow"><h1>Notas</h1>
+    <p class="muted">Dúvidas, regras e palavras novas que apontaste ao estudar.</p>
+    <div class="card stack"><textarea id="newNote" rows="3" placeholder="Nova nota…"></textarea>
+      <div class="inline"><select id="newTopic">${topicOpts('')}</select><button class="btn primary" id="addNote">Guardar nota</button></div></div>
+    <div class="inline filters"><input id="search" type="search" placeholder="Pesquisar notas" />
+      <select id="filterTopic"><option value="*">Todos os tópicos</option>${topicOpts('_')}</select></div>
+    <div id="nlist"></div></section>`);
+
+  let editing = null;
+  const list = () => view().querySelector('#nlist');
+  const render = () => {
+    const q = view().querySelector('#search').value.trim().toLowerCase();
+    const f = view().querySelector('#filterTopic').value;
+    const notes = Object.entries(store.state.notes)
+      .map(([id, n]) => ({ id, ...n }))
+      .filter((n) => (f === '*' || (f === '_' ? !n.topic : n.topic === f)) && (!q || `${n.text} ${n.context || ''}`.toLowerCase().includes(q)))
+      .sort((a, b) => b.at - a.at);
+    if (!notes.length) {
+      list().innerHTML = `<div class="card center-card"><p>${Object.keys(store.state.notes).length ? 'Nenhuma nota encontrada.' : 'Ainda não tens notas. Usa "Apontar nota" durante os exercícios.'}</p></div>`;
+      return;
+    }
+    list().innerHTML = notes.map((n) => {
+      const t = topicById(n.topic);
+      return `<div class="card note" data-id="${n.id}">
+        <div class="note-head"><span class="chip">${t ? esc(t.title) : 'Geral'}</span><small class="muted">${fmtDate(n.at)}</small></div>
+        ${n.context ? `<blockquote class="ctx">${esc(n.context)}</blockquote>` : ''}
+        ${editing === n.id ? `<textarea class="edit" rows="4">${esc(n.text)}</textarea>
+          <div class="inline"><button class="btn primary" data-a="save">Guardar</button><button class="btn" data-a="cancel">Cancelar</button></div>`
+        : `<p class="note-text">${esc(n.text)}</p>
+          <div class="note-actions"><button class="link-btn" data-a="edit">Editar</button><button class="link-btn danger" data-a="del">Apagar</button></div>`}
+      </div>`;
+    }).join('');
+  };
+  render();
+  view().querySelector('#search').addEventListener('input', render);
+  view().querySelector('#filterTopic').addEventListener('change', render);
+  view().querySelector('#addNote').addEventListener('click', async (e) => {
+    const ta = view().querySelector('#newNote');
+    const text = ta.value.trim();
+    if (!text) return toast('Escreve a nota primeiro.', 'err');
+    e.target.disabled = true;
+    try {
+      await store.saveNote({ text, topic: view().querySelector('#newTopic').value });
+      ta.value = '';
+      render();
+      toast('Nota guardada.');
+    } catch (x) {
+      toast('Não foi possível guardar: ' + x.message, 'err');
+    } finally {
+      e.target.disabled = false;
+    }
+  });
+  list().addEventListener('click', async (e) => {
+    const a = e.target.dataset.a;
+    const card = e.target.closest('.note');
+    if (!a || !card) return;
+    const id = card.dataset.id;
+    try {
+      if (a === 'edit') editing = id;
+      if (a === 'cancel') editing = null;
+      if (a === 'save') {
+        const text = card.querySelector('.edit').value.trim();
+        if (!text) return toast('A nota não pode ficar vazia.', 'err');
+        await store.saveNote({ id, text });
+        editing = null;
+      }
+      if (a === 'del') {
+        if (!confirm('Apagar esta nota?')) return;
+        await store.deleteNote(id);
+      }
+      render();
+    } catch (x) {
+      toast('Erro: ' + x.message, 'err');
+    }
+  });
 }
 
 // ---------- definições ----------

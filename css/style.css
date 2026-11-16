@@ -178,3 +178,12 @@ blockquote { margin: 0; padding: .4rem 0 .4rem 1rem; border-left: 3px solid var(
 .boot { max-width: 640px; margin: 4rem auto; padding: 0 1rem; display: grid; gap: 1rem; }
 .boot .sk { height: 4rem; }
 @media (prefers-reduced-motion: reduce) { .sk { animation: none; } .ring-fg, .bar i, .progress i { transition: none; } }
+
+/* notas */
+.note-box { margin: -.2rem 0 1rem; } .note-box textarea { margin: .6rem 0; }
+.filters { margin: 1.2rem 0 1rem; } .filters select { flex: 0 0 auto; width: auto; max-width: 100%; }
+.note-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+.note-text { margin: .4rem 0; white-space: pre-wrap; }
+.note-actions { display: flex; gap: 1rem; margin-top: .4rem; font-size: .88rem; }
+.link-btn.danger:hover { color: var(--weak); }
+blockquote.ctx { font-size: .85rem; color: var(--muted); margin-bottom: .6rem; white-space: normal; }

@@ -3,7 +3,7 @@ import * as backend from './backend.js';
 import { TOPICS } from './data/topics.js';
 
 let uid = null;
-export let state = { topics: {}, sessions: {}, mistakes: {}, writings: {}, settings: {} };
+export let state = { topics: {}, sessions: {}, mistakes: {}, writings: {}, notes: {}, settings: {} };
 
 const RECENT = 30; // janela de respostas recentes usada para avaliar cada tópico
 const clean = (o) => JSON.parse(JSON.stringify(o));
@@ -17,12 +17,12 @@ export function hash(s) {
 export async function load(userId) {
   uid = userId;
   const d = await backend.loadUser(uid);
-  state = { topics: {}, sessions: {}, mistakes: {}, writings: {}, settings: {}, ...d };
+  state = { topics: {}, sessions: {}, mistakes: {}, writings: {}, notes: {}, settings: {}, ...d };
 }
 
 export function reset() {
   uid = null;
-  state = { topics: {}, sessions: {}, mistakes: {}, writings: {}, settings: {} };
+  state = { topics: {}, sessions: {}, mistakes: {}, writings: {}, notes: {}, settings: {} };
 }
 
 function bumpTopic(updates, topicId, values, now) {
@@ -79,6 +79,21 @@ export async function saveWriting({ prompt, text, words, feedback }) {
   state.sessions[`s${now}`] = session;
   updates[`sessions/s${now}`] = session;
   await backend.writeUser(uid, clean(updates));
+}
+
+// Notas: { text, topic?, context? } — id existente = editar
+export async function saveNote({ id, ...note }) {
+  const now = Date.now();
+  const key = id || `n${now}${Math.random().toString(36).slice(2, 6)}`;
+  const n = { ...(state.notes[key] || {}), ...note, at: state.notes[key]?.at || now, edited: now };
+  state.notes[key] = n;
+  await backend.writeUser(uid, { [`notes/${key}`]: clean(n) });
+  return key;
+}
+
+export async function deleteNote(id) {
+  delete state.notes[id];
+  await backend.writeUser(uid, { [`notes/${id}`]: null });
 }
 
 export async function saveSettings(settings) {
