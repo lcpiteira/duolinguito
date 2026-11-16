@@ -62,8 +62,12 @@ async function githubUser(code, env, origin) {
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'englishprep-mcp' },
     body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code, redirect_uri: `${origin}/callback` }),
   });
-  const { access_token } = await tokenRes.json().catch(() => ({}));
-  if (!access_token) return null;
+  const tokenBody = await tokenRes.json().catch(() => ({}));
+  const { access_token } = tokenBody;
+  if (!access_token) {
+    console.log('github token exchange failed', { status: tokenRes.status, error: tokenBody.error, description: tokenBody.error_description });
+    return null;
+  }
   const userRes = await fetch('https://api.github.com/user', {
     headers: { Authorization: `Bearer ${access_token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'englishprep-mcp' },
   });
@@ -79,10 +83,14 @@ async function callback(request, env) {
     return new Response(null, { status: 302, headers });
   };
   const code = url.searchParams.get('code');
-  if (url.searchParams.get('error') || !code) return redirect(authorizationErrorRedirect(original, 'access_denied'));
+  if (url.searchParams.get('error') || !code) {
+    console.log('upstream error', { error: url.searchParams.get('error'), description: url.searchParams.get('error_description'), hasCode: !!code });
+    return redirect(authorizationErrorRedirect(original, 'access_denied'));
+  }
 
   const user = await githubUser(code, env, url.origin);
   if (!user || String(user.login).toLowerCase() !== env.ALLOWED_GITHUB_USER.toLowerCase()) {
+    console.log('login refused', { gotUser: !!user, login: user?.login });
     return redirect(authorizationErrorRedirect(original, 'access_denied'));
   }
   const { redirectTo } = await oauth.completeAuthorization({
@@ -102,6 +110,7 @@ const defaultHandler = {
       if (pathname === '/authorize') return request.method === 'POST' ? await submitConsent(request, env) : await showConsent(request, env);
       if (pathname === '/callback') return await callback(request, env);
     } catch (e) {
+      console.log('authorization error', { path: pathname, name: e?.name, code: e?.code, description: e?.description || e?.message });
       if (e instanceof AuthorizationError && e.redirectTo) return Response.redirect(e.redirectTo, 302);
       if (e instanceof AuthorizationError) return errorPage(e.description || 'Pedido inválido ou expirado. Tenta outra vez.');
       throw e;
