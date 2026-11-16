@@ -201,3 +201,24 @@ blockquote.ctx { font-size: .85rem; color: var(--muted); margin-bottom: .6rem; w
 .tr-main { margin: 0; font-size: 1.1rem; font-weight: 600; }
 .tr-note { margin: .3rem 0 0; font-size: .85rem; color: var(--muted); }
 .tr-foot { margin-top: .5rem; display: flex; justify-content: flex-end; } .tr-foot:empty { display: none; }
+
+/* Botão "Guardar nota" em forma de dachshund */
+.btn-dachshund { --dog: #7a4a21; --dog-dark: #4e2d12; --dog-hover: #96602e; position: relative; display: inline-block; width: 11rem; min-height: 44px; padding: 0; border: 0; background: none; color: #fff; font: inherit; font-weight: 600; cursor: pointer; border-radius: 1.5rem; -webkit-tap-highlight-color: transparent; }
+:root[data-theme="dark"] .btn-dachshund { --dog: #9a6232; --dog-dark: #6b3f1c; --dog-hover: #b57a43; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .btn-dachshund { --dog: #9a6232; --dog-dark: #6b3f1c; --dog-hover: #b57a43; } }
+.btn-dachshund.small { width: 8rem; }
+.btn-dachshund svg { display: block; width: 100%; height: auto; overflow: visible; pointer-events: none; }
+.btn-dachshund svg * { pointer-events: none; }
+.btn-dachshund .dg-fill { fill: var(--dog); transition: fill .15s; }
+.btn-dachshund .dg-ear { fill: var(--dog-dark); }
+.btn-dachshund .dg-eye, .btn-dachshund .dg-nose { fill: #1a1f36; }
+.btn-dachshund .dg-tail { fill: none; stroke: var(--dog); stroke-width: 6; stroke-linecap: round; transition: stroke .15s; transform-box: fill-box; transform-origin: 100% 100%; }
+.btn-dachshund .dg-label { position: absolute; left: 7%; top: 12.5%; width: 63.5%; height: 50%; display: flex; align-items: center; justify-content: center; font-size: .9rem; line-height: 1; pointer-events: none; }
+.btn-dachshund.small .dg-label { font-size: .75rem; }
+.btn-dachshund:hover .dg-fill, .btn-dachshund:focus-visible .dg-fill { fill: var(--dog-hover); }
+.btn-dachshund:hover .dg-tail, .btn-dachshund:focus-visible .dg-tail { stroke: var(--dog-hover); animation: dg-wag .35s ease-in-out infinite alternate; }
+.btn-dachshund:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.btn-dachshund:disabled { opacity: .5; cursor: wait; }
+.btn-dachshund:disabled .dg-tail { animation: none; }
+@keyframes dg-wag { from { transform: rotate(-14deg); } to { transform: rotate(16deg); } }
+@media (prefers-reduced-motion: reduce) { .btn-dachshund .dg-tail { animation: none !important; } }
