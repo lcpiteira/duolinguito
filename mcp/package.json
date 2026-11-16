@@ -1,0 +1,9 @@
+{
+  "name": "englishprep-mcp",
+  "private": true,
+  "type": "module",
+  "description": "Servidor MCP (Cloudflare Worker) para abrir e acompanhar issues do repositório a partir do Claude",
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.0.0"
+  }
+}

@@ -1,0 +1,17 @@
+name = "englishprep-mcp"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+GITHUB_REPO = "lcpiteira/duolinguito"
+ALLOWED_GITHUB_USER = "lcpiteira"
+# Client ID da OAuth App do GitHub (público). Preenchido depois de criares a app.
+GITHUB_CLIENT_ID = "PREENCHER"
+
+# Segredos (não vão para o git):
+#   npx wrangler secret put GITHUB_CLIENT_SECRET   (OAuth App do GitHub)
+#   npx wrangler secret put GITHUB_PAT             (fine-grained token: só este repo, Issues leitura e escrita)
+
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "75dfb4b32aee4de7b598f283e1e4fdc7"
