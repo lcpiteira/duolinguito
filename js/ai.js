@@ -45,7 +45,7 @@ async function call(prompt, temperature = 0.8) {
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '';
   try {
-    return JSON.parse(text.replace(/^```json\s*|```$/g, ''));
+    return JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
   } catch {
     throw new Error('A IA devolveu uma resposta inválida. Tenta outra vez.');
   }

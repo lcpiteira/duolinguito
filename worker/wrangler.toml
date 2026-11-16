@@ -5,8 +5,13 @@ compatibility_date = "2025-01-01"
 [vars]
 FIREBASE_PROJECT_ID = "englishprep-lcp"
 GEMINI_MODEL = "gemini-2.5-flash"
+FALLBACK_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 DAILY_LIMIT = "40"
 ALLOWED_ORIGINS = "https://lcpiteira.github.io,http://localhost:8000"
+
+# Reserva grátis (Workers AI) quando a quota do Gemini acaba
+[ai]
+binding = "AI"
 
 [[kv_namespaces]]
 binding = "USAGE"

@@ -75,8 +75,22 @@ export default {
         generationConfig: { responseMimeType: 'application/json', temperature: Math.min(1.2, Math.max(0, Number(temperature) || 0.8)) },
       }),
     });
-    if (upstream.status === 429) return reply(429, { error: 'A quota grátis da IA esgotou-se por agora. Tenta daqui a pouco ou usa as perguntas do site.' });
-    if (!upstream.ok) return reply(502, { error: 'Erro do serviço de IA. Tenta outra vez.' });
-    return new Response(upstream.body, { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
+    if (upstream.ok) return new Response(upstream.body, { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+    // Reserva: Gemini sem quota ou com erro → Workers AI (grátis), devolvido no mesmo formato do Gemini
+    try {
+      const out = await env.AI.run(env.FALLBACK_MODEL, {
+        messages: [
+          { role: 'system', content: `${system}\nReply with a single valid JSON object and nothing else.` },
+          { role: 'user', content: prompt },
+        ],
+        temperature: Math.min(1, Math.max(0, Number(temperature) || 0.7)),
+        max_tokens: 3000,
+      });
+      const text = typeof out.response === 'string' ? out.response : JSON.stringify(out.response);
+      return reply(200, { candidates: [{ content: { parts: [{ text }] } }], fallback: true });
+    } catch {
+      return reply(upstream.status === 429 ? 429 : 502, { error: 'A IA está sem quota grátis por agora. Tenta daqui a pouco ou usa as perguntas do site.' });
+    }
   },
 };
