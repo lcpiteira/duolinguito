@@ -2,6 +2,7 @@ import * as backend from './backend.js';
 import * as store from './store.js';
 import * as ai from './ai.js';
 import { initTranslate } from './translate.js';
+import { dachshundBtn } from './dachshund.js';
 import { TOPICS, topicById } from './data/topics.js';
 import { BANK, READINGS, WRITING_PROMPTS } from './data/questions.js';
 
@@ -349,7 +350,7 @@ function viewQuiz() {
     <div class="card question"><p class="qtext" data-tr>${esc(q.q)}</p>${body}<div id="fb"></div></div>
     <div class="note-box"><button class="link-btn" id="noteToggle">+ Apontar nota</button>
       <div id="notePanel" hidden><textarea id="noteText" rows="3" placeholder="Uma dúvida, uma regra, uma palavra nova…"></textarea>
-        <div class="wc-row"><small class="muted">Fica ligada a esta pergunta.</small><button class="btn primary" id="noteSave">Guardar nota</button></div></div></div>
+        <div class="wc-row"><small class="muted">Fica ligada a esta pergunta.</small>${dachshundBtn({ id: 'noteSave' })}</div></div></div>
   </section>`);
   const panel = view().querySelector('#notePanel');
   view().querySelector('#noteToggle').addEventListener('click', () => {
@@ -534,7 +535,7 @@ function viewNotes() {
   setView(`<section class="page narrow"><h1>Notas</h1>
     <p class="muted">Dúvidas, regras e palavras novas que apontaste ao estudar.</p>
     <div class="card stack"><textarea id="newNote" rows="3" placeholder="Nova nota…"></textarea>
-      <div class="inline"><select id="newTopic">${topicOpts('')}</select><button class="btn primary" id="addNote">Guardar nota</button></div></div>
+      <div class="inline"><select id="newTopic">${topicOpts('')}</select>${dachshundBtn({ id: 'addNote' })}</div></div>
     <div class="inline filters"><input id="search" type="search" placeholder="Pesquisar notas" />
       <select id="filterTopic"><option value="*">Todos os tópicos</option>${topicOpts('_')}</select></div>
     <div id="nlist"></div></section>`);
