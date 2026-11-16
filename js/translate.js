@@ -1,6 +1,7 @@
 // Tradução ao toque longo numa palavra ou ao selecionar uma frase.
 // Zonas traduzíveis: qualquer elemento com [data-tr] e as opções de resposta (.opt).
 import { translate } from './ai.js';
+import { dachshundBtn } from './dachshund.js';
 
 const ZONE = '[data-tr], .opt';
 const LONG_PRESS_MS = 480;
@@ -185,14 +186,16 @@ function show({ text, rect, context, source = 'press' }) {
         note.textContent = r.note;
         body.appendChild(note);
       }
-      foot.innerHTML = '<button class="tr-btn strong" data-a="save" type="button">Guardar nota</button>';
+      foot.innerHTML = dachshundBtn({ small: true, attrs: 'data-a="save"' });
       foot.querySelector('[data-a="save"]').addEventListener('click', async (e) => {
-        e.target.disabled = true;
+        const btn = e.currentTarget;
+        btn.disabled = true;
         try {
           await hooks.saveNote(`${text} → ${r.translation}`, context);
-          e.target.textContent = 'Guardada';
+          btn.querySelector('.dx-label').textContent = 'Guardada';
+          btn.setAttribute('aria-label', 'Nota guardada');
         } catch {
-          e.target.disabled = false;
+          btn.disabled = false;
           hooks.toast?.('Não foi possível guardar a nota.', 'err');
         }
       });
