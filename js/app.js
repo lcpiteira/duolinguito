@@ -33,6 +33,15 @@ function toast(msg, kind = '') {
   setTimeout(() => el.remove(), 3500);
 }
 
+const icon = (d) => `<svg aria-hidden="true" viewBox="0 0 24 24">${d}</svg>`;
+const NAV_ICONS = {
+  home: icon('<path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>'),
+  practice: icon('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/>'),
+  writing: icon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+  mistakes: icon('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
+  settings: icon('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
+};
+
 const view = () => document.getElementById('view');
 const setView = (html) => {
   view().innerHTML = html;
@@ -81,7 +90,7 @@ function renderAuth(signup = false) {
   $app.innerHTML = `
   <div class="auth-wrap">
     <div class="auth-card">
-      <div class="logo big">🇬🇧 <span>English<b>Prep</b></span></div>
+      <div class="logo big">English<b>Prep</b></div>
       <p class="muted">Prepara o teste de inglês britânico com exercícios, progresso e correção por IA.</p>
       ${local ? `<div class="notice">⚠️ Firebase ainda não está configurado (<code>js/config.js</code>). Podes experimentar em <b>modo local</b>: os dados ficam só neste browser.</div>
         <button class="btn primary wide" id="local">Entrar em modo local</button>` : `
@@ -134,13 +143,13 @@ function renderShell() {
   const initial = esc((me.name || '?').trim()[0]?.toUpperCase() || '?');
   $app.innerHTML = `
   <header class="topbar">
-    <a class="logo" href="#/">🇬🇧 <span>English<b>Prep</b></span></a>
+    <a class="logo" href="#/">English<b>Prep</b></a>
     <nav id="nav">
-      <a href="#/" data-r="home">Início</a>
-      <a href="#/practice" data-r="practice">Praticar</a>
-      <a href="#/writing" data-r="writing">Escrever</a>
-      <a href="#/mistakes" data-r="mistakes">Erros</a>
-      <a href="#/settings" data-r="settings">Definições</a>
+      <a href="#/" data-r="home">${NAV_ICONS.home}<span>Início</span></a>
+      <a href="#/practice" data-r="practice">${NAV_ICONS.practice}<span>Praticar</span></a>
+      <a href="#/writing" data-r="writing">${NAV_ICONS.writing}<span>Escrever</span></a>
+      <a href="#/mistakes" data-r="mistakes">${NAV_ICONS.mistakes}<span>Erros</span></a>
+      <a href="#/settings" data-r="settings">${NAV_ICONS.settings}<span>Definições</span></a>
     </nav>
     <button class="avatar" id="logout" title="Sair (${esc(me.name)})">${me.photo ? `<img src="${esc(me.photo)}" alt="" referrerpolicy="no-referrer">` : initial}</button>
   </header>
@@ -171,8 +180,8 @@ function ring(value) {
 
 function topicRow({ topic, stat, status }) {
   return `<a class="trow" href="#/topic/${topic.id}">
-    <span class="temoji">${topic.emoji}</span>
-    <span class="tmain"><b>${topic.n}. ${esc(topic.title)}</b>
+    <span class="tnum">${topic.n}</span>
+    <span class="tmain"><b>${esc(topic.title)}</b>
       <span class="bar"><i class="${status.key}" style="width:${Math.round((status.acc ?? 0) * 100)}%"></i></span></span>
     <span class="tside"><span class="chip ${status.key}">${status.label}</span><small>${stat?.n ? `${pct(status.acc)} · ${Math.round(stat.n)} resp.` : ''}</small></span>
   </a>`;
@@ -182,14 +191,14 @@ function viewHome() {
   const s = store.summary();
   const first = esc((me.name || '').split(' ')[0]);
   const nextCard = s.next
-    ? `<div class="card hero-next"><span class="eyebrow">Estuda a seguir</span>
-        <h3>${s.next.topic.emoji} ${esc(s.next.topic.title)}</h3>
+    ? `<div class="card hero-next"><span class="eyebrow">Estuda a seguir · Tópico ${s.next.topic.n}</span>
+        <h3>${esc(s.next.topic.title)}</h3>
         <p class="muted">${s.next.status.key === 'new' ? 'Ainda não começaste este tópico.' : `Precisão recente: ${pct(s.next.status.acc)}.`}</p>
         <a class="btn primary" href="#/topic/${s.next.topic.id}">Praticar agora →</a></div>`
-    : `<div class="card hero-next"><span class="eyebrow">Parabéns</span><h3>🎉 Todos os tópicos dominados</h3><p class="muted">Continua a praticar com exercícios gerados por IA.</p></div>`;
+    : `<div class="card hero-next"><span class="eyebrow">Parabéns</span><h3>Todos os tópicos dominados</h3><p class="muted">Continua a praticar com exercícios gerados por IA.</p></div>`;
   setView(`
   <section class="page">
-    <h1>Olá${first ? ', ' + first : ''} 👋</h1>
+    <h1>Olá${first ? ', ' + first : ''}.</h1>
     <div class="grid2">
       <div class="card score">
         ${ring(s.acc)}
@@ -201,15 +210,15 @@ function viewHome() {
     </div>
     <div class="stats">
       <div class="card stat"><b>${s.sessions}</b><span>sessões</span></div>
-      <div class="card stat"><b>${s.streak}🔥</b><span>dias seguidos</span></div>
+      <div class="card stat"><b>${s.streak}</b><span>dias seguidos</span></div>
       <a class="card stat link" href="#/mistakes"><b>${s.mistakes}</b><span>erros para rever</span></a>
     </div>
-    ${s.weak.length ? `<div class="card warn"><b>⚠️ Estás a falhar muito em:</b> ${s.weak.map((t) => `<a href="#/topic/${t.topic.id}">${esc(t.topic.title)}</a>`).join(', ')}</div>` : ''}
+    ${s.weak.length ? `<div class="card warn"><b>Estás a falhar muito em:</b> ${s.weak.map((t) => `<a href="#/topic/${t.topic.id}">${esc(t.topic.title)}</a>`).join(', ')}</div>` : ''}
     <h2>Tópicos <small class="muted">(do mais fraco para o mais forte)</small></h2>
     <div class="card list">${s.ranked.map(topicRow).join('')}</div>
     ${s.recent.length ? `<h2>Atividade recente</h2><div class="card list">${s.recent.map((r) => {
       const t = topicById(r.topic);
-      return `<div class="trow static"><span class="temoji">${t ? t.emoji : '🔁'}</span><span class="tmain"><b>${esc(t ? t.title : 'Rever erros')}</b><small class="muted">${fmtDate(r.at)} · ${r.source === 'ai' ? 'IA' : 'site'}</small></span><span class="tside"><b>${r.score}/${r.total}</b></span></div>`;
+      return `<div class="trow static"><span class="tnum">${t ? t.n : '↻'}</span><span class="tmain"><b>${esc(t ? t.title : 'Rever erros')}</b><small class="muted">${fmtDate(r.at)} · ${r.source === 'ai' ? 'IA' : 'site'}</small></span><span class="tside"><b>${r.score}/${r.total}</b></span></div>`;
     }).join('')}</div>` : ''}
   </section>`);
 }
@@ -228,17 +237,17 @@ function viewTopic(id) {
   const st = store.topicStatus(stat);
   let actions;
   if (t.kind === 'writing') {
-    actions = `<a class="btn primary" href="#/writing">Ir escrever ✍️</a>`;
+    actions = `<a class="btn primary" href="#/writing">Ir escrever →</a>`;
   } else if (t.kind === 'reading') {
-    actions = `<button class="btn primary" data-act="reading-bank">📚 Texto do site</button>
-      <div class="inline"><input id="theme" placeholder="Tema (opcional, ex: travel, school)" /><button class="btn" data-act="reading-ai">✨ Gerar texto com IA</button></div>`;
+    actions = `<button class="btn primary" data-act="reading-bank">Texto do site</button>
+      <div class="inline"><input id="theme" placeholder="Tema (opcional, ex: travel, school)" aria-label="Tema do texto" /><button class="btn" data-act="reading-ai">Gerar texto com IA</button></div>`;
   } else {
-    actions = `<button class="btn primary" data-act="bank">📚 10 perguntas do site</button>
-      <button class="btn" data-act="ai">✨ 10 perguntas novas com IA</button>`;
+    actions = `<button class="btn primary" data-act="bank">10 perguntas do site</button>
+      <button class="btn" data-act="ai">10 perguntas novas com IA</button>`;
   }
   setView(`<section class="page narrow">
     <a class="back" href="#/practice">← Tópicos</a>
-    <div class="card"><div class="topic-head"><span class="temoji big">${t.emoji}</span><div><h1>${t.n}. ${esc(t.title)}</h1><p class="muted">${esc(t.desc)}</p></div></div>
+    <div class="card"><div class="topic-head"><span class="tnum big">${String(t.n).padStart(2, '0')}</span><div><h1>${esc(t.title)}</h1><p class="muted">${esc(t.desc)}</p></div></div>
     <div class="stats mini"><div><b>${stat?.n ? pct(st.acc) : '–'}</b><span>precisão recente</span></div><div><b>${stat?.n ? Math.round(stat.n) : 0}</b><span>respostas</span></div><div><span class="chip ${st.key}">${st.label}</span></div></div>
     <div class="actions">${actions}</div></div></section>`);
   view().querySelectorAll('[data-act]').forEach((b) =>
@@ -305,7 +314,7 @@ function viewQuiz() {
       ? `<div class="options">${q.options.map((o, i) => `<button class="opt" data-i="${i}">${esc(o)}</button>`).join('')}</div>`
       : `<form id="gapForm" class="inline"><input id="gap" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Escreve a resposta" autofocus /><button class="btn primary" type="submit">Verificar</button></form>`;
   setView(`<section class="page narrow">
-    <div class="quiz-top"><button class="link-btn" id="quit">✕ Sair</button><span>${t ? t.emoji + ' ' + esc(t.title) : '🔁 Rever erros'}</span><span>${quiz.i + 1}/${total}</span></div>
+    <div class="quiz-top"><button class="link-btn" id="quit">✕ Sair</button><span>${t ? esc(t.title) : 'Rever erros'}</span><span>${quiz.i + 1}/${total}</span></div>
     <div class="progress"><i style="width:${(quiz.i / total) * 100}%"></i></div>
     ${quiz.passage ? `<details class="card passage" ${quiz.i === 0 ? 'open' : ''}><summary>📖 ${esc(quiz.passage.title)}</summary>${quiz.passage.text.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}
     <div class="card question"><p class="qtext">${esc(q.q)}</p>${body}<div id="fb"></div></div>
@@ -342,7 +351,7 @@ function answer(your, btn) {
   const correct = q.type === 'mc' ? q.answer : q.answers[0];
   const last = quiz.i === quiz.questions.length - 1;
   view().querySelector('#fb').innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}">
-    <b>${ok ? '✅ Correto!' : '❌ Não foi bem.'}</b>${ok ? '' : ` Resposta certa: <b>${esc(correct)}</b>`}
+    <b>${ok ? 'Correto.' : 'Não foi bem.'}</b>${ok ? '' : ` Resposta certa: <b>${esc(correct)}</b>`}
     ${q.explain ? `<p>${esc(q.explain)}</p>` : ''}</div>
     <button class="btn primary wide" id="next" autofocus>${last ? 'Ver resultado' : 'Seguinte →'}</button>`;
   const next = view().querySelector('#next');
@@ -374,7 +383,7 @@ async function nextQuestion() {
 function viewResult(session) {
   const wrong = quiz.items.filter((i) => !i.ok);
   const p = session.score / session.total;
-  const msg = p >= 0.9 ? 'Excelente! 🏆' : p >= 0.7 ? 'Muito bom! 👏' : p >= 0.5 ? 'Vai melhorando 💪' : 'Precisas de rever este tópico 📚';
+  const msg = p >= 0.9 ? 'Excelente!' : p >= 0.7 ? 'Muito bom!' : p >= 0.5 ? 'Vai melhorando.' : 'Precisas de rever este tópico.';
   const t = topicById(quiz.topicId);
   setView(`<section class="page narrow">
     <div class="card result">${ring(p)}<h1>${session.score}/${session.total}</h1><p>${msg}</p></div>
@@ -390,15 +399,15 @@ function viewResult(session) {
 function viewMistakes() {
   const list = Object.values(store.state.mistakes);
   if (!list.length) {
-    return setView(`<section class="page narrow"><h1>Erros</h1><div class="card center-card"><p>🎉 Não tens erros por rever.</p><a class="btn primary" href="#/practice">Praticar</a></div></section>`);
+    return setView(`<section class="page narrow"><h1>Erros</h1><div class="card center-card"><p>Não tens erros por rever.</p><a class="btn primary" href="#/practice">Praticar</a></div></section>`);
   }
   const by = {};
   list.forEach((m) => (by[m.topic] = (by[m.topic] || 0) + 1));
   setView(`<section class="page narrow"><h1>Erros para rever</h1>
     <p class="muted">Respondendo certo a uma pergunta, ela sai desta lista.</p>
     <div class="card"><p><b>${list.length}</b> perguntas falhadas</p>
-      <div class="chips">${Object.entries(by).map(([k, n]) => `<span class="chip">${topicById(k)?.emoji || ''} ${esc(topicById(k)?.title || k)}: ${n}</span>`).join('')}</div>
-      <div class="actions"><button class="btn primary" id="go">🔁 Rever ${Math.min(10, list.length)} agora</button></div></div></section>`);
+      <div class="chips">${Object.entries(by).map(([k, n]) => `<span class="chip">${esc(topicById(k)?.title || k)}: ${n}</span>`).join('')}</div>
+      <div class="actions"><button class="btn primary" id="go">Rever ${Math.min(10, list.length)} agora</button></div></div></section>`);
   view().querySelector('#go').addEventListener('click', () => {
     const qs = shuffle(list).slice(0, 10).map(({ at, your, ...q }) => q);
     startQuiz(null, 'site', qs);
@@ -410,13 +419,13 @@ function viewWriting() {
   const p = WRITING_PROMPTS[0];
   const history = Object.values(store.state.writings).sort((a, b) => b.at - a.at);
   setView(`<section class="page narrow">
-    <h1>✍️ ${esc(p.title)}</h1>
+    <h1>${esc(p.title)}</h1>
     <p class="muted">Escreve entre <b>${p.min} e ${p.max} palavras</b>. A IA corrige e mostra como dizer melhor.</p>
     <div class="card"><ul class="hints">${p.hints.map((h) => `<li>${esc(h)}</li>`).join('')}</ul>
-      <textarea id="essay" rows="10" placeholder="My friend's name is…" spellcheck="false"></textarea>
-      <div class="wc-row"><span id="wc" class="wc">0 palavras</span><button class="btn primary" id="submit">✨ Corrigir com IA</button></div></div>
+      <textarea id="essay" rows="10" placeholder="My friend's name is…" spellcheck="false" aria-label="O teu texto"></textarea>
+      <div class="wc-row"><span id="wc" class="wc">0 palavras</span><button class="btn primary" id="submit">Corrigir com IA</button></div></div>
     <div id="result"></div>
-    ${history.length ? `<h2>Composições anteriores</h2><div class="card list">${history.map((w, i) => `<button class="trow" data-h="${i}"><span class="temoji">📝</span><span class="tmain"><b>${fmtDate(w.at)} · ${w.words} palavras</b><small class="muted">${esc(w.text.slice(0, 70))}…</small></span><span class="tside"><b>${w.feedback.score}/10</b></span></button>`).join('')}</div>` : ''}
+    ${history.length ? `<h2>Composições anteriores</h2><div class="card list">${history.map((w, i) => `<button class="trow" data-h="${i}"><span class="tnum">${history.length - i}</span><span class="tmain"><b>${fmtDate(w.at)} · ${w.words} palavras</b><small class="muted">${esc(w.text.slice(0, 70))}…</small></span><span class="tside"><b>${w.feedback.score}/10</b></span></button>`).join('')}</div>` : ''}
   </section>`);
   const ta = view().querySelector('#essay');
   const wc = view().querySelector('#wc');
@@ -459,11 +468,11 @@ function renderFeedback(f, words, p) {
   const li = (a) => a.map((x) => `<li>${esc(x)}</li>`).join('');
   return `<div class="card feedback-card">
     <div class="fb-head">${ring(f.score / 10)}<div><h2>${f.score}/10</h2><p>${esc(f.summary)}</p><small class="muted">${words} palavras${words < p.min || words > p.max ? ' · fora do intervalo pedido' : ''}</small></div></div>
-    ${f.strengths.length ? `<h3>👍 Pontos fortes</h3><ul>${li(f.strengths)}</ul>` : ''}
-    ${f.corrections.length ? `<h3>🛠️ Correções</h3>${f.corrections.map((c) => `<div class="corr"><p><s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : '<h3>🛠️ Correções</h3><p>Sem erros relevantes. 🎉</p>'}
-    ${f.betterPhrases.length ? `<h3>💡 Como dizer melhor</h3>${f.betterPhrases.map((c) => `<div class="corr"><p>${esc(c.original)} → <b>${esc(c.better)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : ''}
-    ${f.improvedVersion ? `<h3>✨ Versão melhorada</h3><blockquote>${esc(f.improvedVersion)}</blockquote>` : ''}
-    ${f.tips.length ? `<h3>🎯 Dicas</h3><ul>${li(f.tips)}</ul>` : ''}</div>`;
+    ${f.strengths.length ? `<h3>Pontos fortes</h3><ul>${li(f.strengths)}</ul>` : ''}
+    ${f.corrections.length ? `<h3>Correções</h3>${f.corrections.map((c) => `<div class="corr"><p><s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : '<h3>Correções</h3><p>Sem erros relevantes.</p>'}
+    ${f.betterPhrases.length ? `<h3>Como dizer melhor</h3>${f.betterPhrases.map((c) => `<div class="corr"><p>${esc(c.original)} → <b>${esc(c.better)}</b></p><small class="muted">${esc(c.why)}</small></div>`).join('')}` : ''}
+    ${f.improvedVersion ? `<h3>Versão melhorada</h3><blockquote>${esc(f.improvedVersion)}</blockquote>` : ''}
+    ${f.tips.length ? `<h3>Dicas</h3><ul>${li(f.tips)}</ul>` : ''}</div>`;
 }
 
 // ---------- definições ----------
@@ -474,13 +483,13 @@ function viewSettings() {
       <label>Nível de dificuldade da IA
         <select id="level">${['A2', 'B1', 'B2'].map((l) => `<option ${level() === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       ${backend.mode === 'local' ? `<label>Chave da API Gemini <small class="muted">(só modo local)</small>
-        <input id="key" type="password" placeholder="AIza…" value="${esc(st.geminiKey || '')}" autocomplete="off" /></label>` : '<p class="muted small">✨ A IA já está incluída: não precisas de nenhuma chave.</p>'}
+        <input id="key" type="password" placeholder="AIza…" value="${esc(st.geminiKey || '')}" autocomplete="off" /></label>` : '<p class="muted small">A IA já está incluída: não precisas de nenhuma chave.</p>'}
       <button class="btn primary" id="save">Guardar</button>
     </div>
     <div class="card"><p>Sessão: <b>${esc(me.email || me.name)}</b> ${backend.mode === 'local' ? '<span class="chip">modo local</span>' : ''}</p><button class="btn" id="out">Terminar sessão</button></div></section>`);
   view().querySelector('#save').addEventListener('click', async () => {
     await store.saveSettings({ level: view().querySelector('#level').value, geminiKey: view().querySelector('#key')?.value.trim() || '' });
-    toast('Guardado ✅');
+    toast('Guardado.');
   });
   view().querySelector('#out').addEventListener('click', () => backend.signOut());
 }
