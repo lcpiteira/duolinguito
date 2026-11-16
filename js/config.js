@@ -10,4 +10,7 @@ export const FIREBASE_CONFIG = {
   appId: '1:921881014914:web:4792054795c4d67a18ba9b',
 };
 
+// Proxy de IA (Cloudflare Worker). Guarda a chave Gemini; o browser nunca a vê.
+export const AI_PROXY_URL = 'https://englishprep-ai.lcpiteira.workers.dev/';
+
 export const configured = !FIREBASE_CONFIG.apiKey.startsWith('YOUR');

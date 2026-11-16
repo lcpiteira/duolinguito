@@ -460,14 +460,13 @@ function viewSettings() {
     <div class="card stack">
       <label>Nível de dificuldade da IA
         <select id="level">${['A2', 'B1', 'B2'].map((l) => `<option ${level() === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label>Chave da API Gemini <small class="muted">(guardada só na tua conta)</small>
-        <input id="key" type="password" placeholder="AIza…" value="${esc(st.geminiKey || '')}" autocomplete="off" /></label>
-      <p class="muted small">Cria uma chave grátis em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>. Restringe-a ao teu domínio.</p>
+      ${backend.mode === 'local' ? `<label>Chave da API Gemini <small class="muted">(só modo local)</small>
+        <input id="key" type="password" placeholder="AIza…" value="${esc(st.geminiKey || '')}" autocomplete="off" /></label>` : '<p class="muted small">✨ A IA já está incluída: não precisas de nenhuma chave.</p>'}
       <button class="btn primary" id="save">Guardar</button>
     </div>
     <div class="card"><p>Sessão: <b>${esc(me.email || me.name)}</b> ${backend.mode === 'local' ? '<span class="chip">modo local</span>' : ''}</p><button class="btn" id="out">Terminar sessão</button></div></section>`);
   view().querySelector('#save').addEventListener('click', async () => {
-    await store.saveSettings({ level: view().querySelector('#level').value, geminiKey: view().querySelector('#key').value.trim() });
+    await store.saveSettings({ level: view().querySelector('#level').value, geminiKey: view().querySelector('#key')?.value.trim() || '' });
     toast('Guardado ✅');
   });
   view().querySelector('#out').addEventListener('click', () => backend.signOut());

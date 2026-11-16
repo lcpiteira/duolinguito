@@ -48,6 +48,7 @@ export async function signUpEmail(name, email, pass) {
   if (name) await cred.user.updateProfile({ displayName: name });
   return cred;
 }
+export const getIdToken = () => auth.currentUser.getIdToken();
 export const resetPassword = (email) => auth.sendPasswordResetEmail(email);
 
 export async function signOut() {

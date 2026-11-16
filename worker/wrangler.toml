@@ -1,0 +1,15 @@
+name = "englishprep-ai"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "englishprep-lcp"
+GEMINI_MODEL = "gemini-2.5-flash"
+DAILY_LIMIT = "40"
+ALLOWED_ORIGINS = "https://lcpiteira.github.io,http://localhost:8000"
+
+[[kv_namespaces]]
+binding = "USAGE"
+id = "f6b8b564427b452fa6a93015f6dfe70f"
+
+# Segredo (não vai para o git): npx wrangler secret put GEMINI_API_KEY

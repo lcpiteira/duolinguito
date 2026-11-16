@@ -1,5 +1,7 @@
 // Integração Gemini: gerar exercícios, textos de leitura e corrigir composições.
 import { geminiKey } from './store.js';
+import * as backend from './backend.js';
+import { AI_PROXY_URL } from './config.js';
 
 const MODEL = 'gemini-2.5-flash';
 const SYSTEM = `You are an expert British English teacher preparing a Portuguese student for an English test.
@@ -9,10 +11,18 @@ Reply with valid JSON only, exactly in the requested shape.`;
 
 export class NoKeyError extends Error {}
 
-async function call(prompt, temperature = 0.8) {
+async function request(prompt, temperature) {
+  // Com Firebase: passa pelo Worker (chave escondida). Em modo local: chave pessoal das Definições.
+  if (backend.mode === 'firebase') {
+    return fetch(AI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await backend.getIdToken()}` },
+      body: JSON.stringify({ system: SYSTEM, prompt, temperature }),
+    });
+  }
   const key = await geminiKey();
   if (!key) throw new NoKeyError('Falta a chave Gemini');
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
@@ -21,6 +31,10 @@ async function call(prompt, temperature = 0.8) {
       generationConfig: { responseMimeType: 'application/json', temperature },
     }),
   });
+}
+
+async function call(prompt, temperature = 0.8) {
+  const res = await request(prompt, temperature);
   if (res.status === 429) {
     throw new Error('Limite grátis da IA atingido. Espera um minuto (ou até amanhã) ou usa as perguntas do site.');
   }
