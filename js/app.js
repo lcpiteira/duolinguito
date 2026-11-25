@@ -3,6 +3,7 @@ import * as store from './store.js';
 import * as ai from './ai.js';
 import { initTranslate } from './translate.js';
 import { dachshundBtn } from './dachshund.js';
+import { initChristmas } from './christmas.js';
 import { TOPICS, topicById } from './data/topics.js';
 import { BANK, READINGS, WRITING_PROMPTS } from './data/questions.js';
 
@@ -92,6 +93,7 @@ function aiError(e) {
 
 // ---------- arranque ----------
 backend.init();
+initChristmas();
 initTranslate({
   saveNote: (text, context) => store.saveNote({ text, topic: quiz?.topicId || '', context }),
   toast,
